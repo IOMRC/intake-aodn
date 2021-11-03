@@ -1,0 +1,13 @@
+metadata:
+  version: 1
+sources:
+  bran2020:
+    args:
+      path:
+      - monthly
+      - ocean_eta_t*.nc
+      url: https://dapds00.nci.org.au/thredds/catalog/gb6/BRAN/BRAN2020/catalog.xml
+    description: 'Bluelink Ocean Reanalysis - BRAN2020'
+    driver: intake_thredds.source.THREDDSMergedSource
+    metadata:
+      permalink: https://geonetwork.nci.org.au/geonetwork/srv/eng/catalog.search#/metadata/f9372_7752_2015_3718 
