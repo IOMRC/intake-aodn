@@ -26,16 +26,133 @@ sources:
         default: "2021-06-30"
       geom:
         description: Geometry in Well Known Text format to subset query to
-        type: str  
-        default: 'POLYGON ((114. -34., 114. -31., 116. -31., 116. -34., 114. -34.))'
+        type: str 
     args:
       urlpath: 'zip://*.json::simplecache::s3://{{refs_bucket}}/IMOS/SRS/SST/ghrsst/L3S-1d/ngt/agg_monthly/references.zip'
       startdt: '{{startdt}}'
       enddt: '{{enddt}}'
       geom: '{{geom}}'
+      cropto: 
+        latitude: -32.
+        longitude: 115.
+        method: 'nearest'
       rename_fields:
         lon: longitude
         lat: latitude
+      storage_options:
+        simple_templates: True
+        target_options:
+          profile: default
+        target_protocol: s3
+        remote_options:
+          anon: true
+        remote_protocol: s3
+  MODIS_1d_chl_oc3:
+    driver: intake_aodn.drivers.RefZarrStackSource
+    description: 'IMOS - SRS - MODIS - 01 day - Chlorophyll-a concentration (OC3 model)'    
+    metadata:
+      permalink: https://catalogue-imos.aodn.org.au/geonetwork/srv/eng/catalog.search#/metadata/d7a14921-8f3f-4522-9a54-e7d1df969c8a
+    parameters:
+      startdt:
+        description: Start date of request
+        type: datetime  
+        min: "1992-03-21" 
+        max: "2021-06-30" 
+        default: "2021-06-01"
+      enddt:
+        description: End date of request
+        type: datetime  
+        min: "1992-03-22"  
+        max: "2021-06-30" 
+        default: "2021-06-30"
+      geom:
+        description: Geometry in Well Known Text format to subset query to
+        type: str  
+    args:
+      urlpath: 'zip://*chl_oc3*.json::simplecache::s3://{{refs_bucket}}/IMOS/SRS/OC/gridded/aqua/P1D/agg_monthly/references.zip'
+      startdt: '{{startdt}}'
+      enddt: '{{enddt}}'
+      geom: '{{geom}}'
+      cropto: 
+        latitude: -32.
+        longitude: 115.
+        method: 'nearest'
+      storage_options:
+        simple_templates: True
+        target_options:
+          profile: default
+        target_protocol: s3
+        remote_options:
+          anon: true
+        remote_protocol: s3
+  MODIS_1d_chl_gsm:
+    driver: intake_aodn.drivers.RefZarrStackSource
+    description: 'IMOS - SRS - MODIS - 01 day - Chlorophyll-a concentration (GSM model)'    
+    metadata:
+      permalink: https://catalogue-imos.aodn.org.au/geonetwork/srv/eng/catalog.search#/metadata/24055e3a-94e5-40bb-b97f-7519f0482d6a
+    parameters:
+      startdt:
+        description: Start date of request
+        type: datetime  
+        min: "1992-03-21" 
+        max: "2021-06-30" 
+        default: "2021-06-01"
+      enddt:
+        description: End date of request
+        type: datetime  
+        min: "1992-03-22"  
+        max: "2021-06-30" 
+        default: "2021-06-30"
+      geom:
+        description: Geometry in Well Known Text format to subset query to
+        type: str 
+    args:
+      urlpath: 'zip://*chl_gsm*.json::simplecache::s3://{{refs_bucket}}/IMOS/SRS/OC/gridded/aqua/P1D/agg_monthly/references.zip'
+      startdt: '{{startdt}}'
+      enddt: '{{enddt}}'
+      geom: '{{geom}}'
+      cropto: 
+        latitude: -32.
+        longitude: 115.
+        method: 'nearest'
+      storage_options:
+        simple_templates: True
+        target_options:
+          profile: default
+        target_protocol: s3
+        remote_options:
+          anon: true
+        remote_protocol: s3
+  MODIS_1d_K_490:
+    driver: intake_aodn.drivers.RefZarrStackSource
+    description: 'IMOS - SRS - MODIS - 01 day - Light Attenuation Coefficient at 490 nm'    
+    metadata:
+      permalink: https://catalogue-imos.aodn.org.au/geonetwork/srv/eng/catalog.search#/metadata/24055e3a-94e5-40bb-b97f-7519f0482d6a
+    parameters:
+      startdt:
+        description: Start date of request
+        type: datetime  
+        min: "1992-03-21" 
+        max: "2021-06-30" 
+        default: "2021-06-01"
+      enddt:
+        description: End date of request
+        type: datetime  
+        min: "1992-03-22"  
+        max: "2021-06-30" 
+        default: "2021-06-30"
+      geom:
+        description: Geometry in Well Known Text format to subset query to
+        type: str 
+    args:
+      urlpath: 'zip://*K_490*.json::simplecache::s3://{{refs_bucket}}/IMOS/SRS/OC/gridded/aqua/P1D/agg_monthly/references.zip'
+      startdt: '{{startdt}}'
+      enddt: '{{enddt}}'
+      geom: '{{geom}}'
+      cropto: 
+        latitude: -32.
+        longitude: 115.
+        method: 'nearest'
       storage_options:
         simple_templates: True
         target_options:

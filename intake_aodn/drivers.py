@@ -14,45 +14,20 @@ import warnings
 logger = logging.getLogger('intake-aodn')
 
 class RefZarrStackSource(DataSourceMixin):
-    """An extension of intake-xarray in an opinionated fashion to open a stack of AODN altimetry data stored as netcdf using xarray.
+    """An extension of intake-xarray in an opinionated fashion to open a stack of AODN data stored as zarr references using fsspec.
     Expands urlpath with the product of values pased in startdt, enddt and geom to establish a finite set of urls to stack. Defers to XArray for file opening and backend driver selection.
     Parameters
     ----------
     urlpath : str
-        Original path to scan for source file(s).
-        Some examples:
-            - ``http://geoserver-123.aodn.org.au/geoserver/ows?service=WFS&request=GetFeature&version=1.0.0&workspace=imos&typeName=srs_surface_waves_altimetry_map&CQL_FILTER=INTERSECTS(geom,{{ geom|urlencode }})%20AND%20time_coverage_start%20<=%20'{{ enddt.strftime("%Y-%m-%dT%H:%M:%SZ") }}'%20AND%20time_coverage_end%20>=%20'{{ startdt.strftime("%Y-%m-%dT%H:%M:%SZ") }}'``
-        Note that urlpath uses startdt, enddt and geom parameters.
-    thredds_prefix : str
-        Thredd prefix to be added to product of scanned urls.
-        Some examples:
-            - ``"http://thredds.aodn.org.au/thredds/dodsC/"``
-        Note that the final path uses startdt, enddt and geom parameters.    
+ 
     startdt, enddt: datetime
         Start and end dates used to retrieve AODN data and crop final stacked dataset to.
     geom: str
         Polygon with geographical coordinates (minLon,minLat,minLon,maxLat,maxLon,maxLat,maxLon,minLat,minLon,minLat).
         Some examples:
             - 'POLYGON ((111.0000000000000000 -33.0000000000000000, 111.0000000000000000 -31.5000000000000000, 115.8000030517578125 -31.5000000000000000, 115.8000030517578125 -33.0000000000000000, 111.0000000000000000 -33.0000000000000000))'
-    ds_filters:
-        Dictionary of common dataset manipulations that are applied in order 
-        during dataset preprocessing. Configurable from catalog entry yaml. 
-        Filters currently available are ['sort','subset','crop','timenorm','rename']
-        Examples:
-            - {'rename':{'dir':'mean_dir'},
-               'sort':['direction'],
-               'timenorm':'hour',
-               'crop':{'lon':slice(-32.2,-33.2),
-                       'lat':slice(114.,115.)}
-               }
-        Additional documentation to follow - see source code for xarray 
-        implementation details.
     chunks : int or dict, optional
-        Chunks is used to load the new dataset into dask
-        arrays. ``chunks={}`` loads the dataset with dask using a single
-        chunk for all arrays.
-    xarray_kwargs: dict
-        Additional xarray kwargs for xr.open_dataset().
+
     storage_options: dict
         If using a remote fs (whether caching locally or not), these are
         the kwargs to pass to that FS.
@@ -62,8 +37,9 @@ class RefZarrStackSource(DataSourceMixin):
     def __init__(self, 
                  urlpath,
                  startdt, 
-                 enddt, 
-                 geom,
+                 enddt,
+                 cropto={},
+                 geom="",
                  storage_options=None,
                  chunks='auto', 
                  rename_fields=None,
@@ -73,6 +49,7 @@ class RefZarrStackSource(DataSourceMixin):
         self.urlpath = urlpath
         self.startdt = to_datetime(startdt)
         self.enddt = to_datetime(enddt)
+        self.cropto = cropto
         self.geom = geom
         self.storage_options = storage_options
         self.chunks = chunks
@@ -102,6 +79,7 @@ class RefZarrStackSource(DataSourceMixin):
 
         def open_and_crop(fo,
                           storage_options,
+                          time=None,
                           cropto=None,
                           varmap=None,
                           load_data=False):
@@ -109,18 +87,32 @@ class RefZarrStackSource(DataSourceMixin):
             import json
             import fsspec
 
-            # print(f'Load:{load_data}')
-            
+            logger.info(f'storage_options {storage_options}')
+
             with fsspec.open(fo,**{storage_options['target_protocol']:storage_options['target_options']}) as f:
                 json_payload = json.load(f)
                 mapper=fsspec.get_mapper('reference://',
                                          fo=json_payload,
                                          **storage_options)
                 ds = xr.open_zarr(mapper,chunks={'time':14},consolidated=False) 
+
+                logger.debug(f'Dataset : {ds}')
+
+                if time is not None:
+                    ds = ds.sel(time=time)
                 if varmap is not None:
                     ds = ds.rename(varmap)
                 if cropto is not None:
-                    ds = ds.sel(**cropto)
+                    if isinstance(list(cropto.values())[0],list):
+                        logger.info(f'Pointwise: {cropto}')
+                        cropto['longitude']=xr.DataArray(cropto['longitude'],dims="points")
+                        cropto['latitude']=xr.DataArray(cropto['latitude'],dims="points")
+                        ds = ds.sel(**cropto)
+                    else:
+                        logger.info(f'Slicing: {cropto}')
+                        ds = ds.sel(**cropto)
+
+                logger.debug(f'Dataset : {ds}')
 
                 if load_data:
                     import dask
@@ -135,25 +127,34 @@ class RefZarrStackSource(DataSourceMixin):
             
             return ds
 
+        logger.info(self)
+        logger.info(f'geom:{self.geom}')
+
         # Establish crop parameter to pass to open
-        lon, lat = shapely.wkt.loads(self.geom).exterior.coords.xy
-        cropto={'time':slice(self.startdt,self.enddt),
-                'latitude':slice(max(lat),min(lat)),
-                'longitude':slice(min(lon),max(lon))}
+        if self.geom:
+            lon, lat = shapely.wkt.loads(self.geom).exterior.coords.xy
+            self.cropto['latitude']=slice(max(lat),min(lat))
+            self.cropto['longitude']=slice(min(lon),max(lon))
+            self.cropto['method']=None
                 
         open_kwargs = {}
         open_kwargs['storage_options'] = self.storage_options
-        open_kwargs['cropto'] = cropto
+        open_kwargs['time'] = slice(self.startdt,self.enddt)
+        open_kwargs['cropto'] = self.cropto
         open_kwargs['varmap'] = self.rename_fields
         open_kwargs['load_data'] = self._load_data
 
+        logger.info(f'open_kwargs: {open_kwargs}')
+
         yearmon = sorted(set(pd.date_range(self.startdt,self.enddt,closed='left').strftime('%Y%m')))
-        logger.debug(f'Loading Months {yearmon}')
+        logger.info(f'Loading Months {yearmon}')
 
         # Get the list of json files from the reference zip
         urlparts = self.urlpath.split('::')
         fs, urlpath = url_to_fs(self.urlpath,**{self.storage_options['target_protocol']:self.storage_options['target_options']})
-        ref_files = fs.ls('/')
+        logger.info(f'Scanning {fs} {urlpath}')
+        ref_files = fs.glob(urlpath)
+        logger.debug(ref_files)
         
         d_open_dataset = delayed(open_and_crop)
         futures = []
