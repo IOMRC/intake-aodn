@@ -1,10 +1,10 @@
 metadata:
   version: 1
   parameters:
-    refs_bucket:
+    refs_url:
       type: str
-      description: The S3 bucket where the reference index is stored
-      default: imos-data-pixeldrill-refs
+      description: The URL where the reference index zipfile is located
+      default: https://github.com/IOMRC/intake-aodn/raw/main/intake_aodn/catalogs/aodn_refs.zip #imos-data-pixeldrill-refs
 sources:
   SST_L3S_1d_ngt:
     driver: intake_aodn.drivers.RefZarrStackSource
@@ -28,7 +28,7 @@ sources:
         description: Geometry in Well Known Text format to subset query to
         type: str 
     args:
-      urlpath: 'zip://*.json::simplecache::s3://{{refs_bucket}}/IMOS/SRS/SST/ghrsst/L3S-1d/ngt/agg_monthly/references.zip'
+      urlpath: 'simplecache::zip://IMOS/SRS/SST/ghrsst/L3S-1d/ngt/agg_monthly/*.json::{{refs_url}}'
       startdt: '{{startdt}}'
       enddt: '{{enddt}}'
       geom: '{{geom}}'
@@ -41,9 +41,8 @@ sources:
         lat: latitude
       storage_options:
         simple_templates: True
-        target_options:
-          profile: default
-        target_protocol: s3
+        target_options: {}
+        target_protocol: http
         remote_options:
           anon: true
         remote_protocol: s3
@@ -69,7 +68,7 @@ sources:
         description: Geometry in Well Known Text format to subset query to
         type: str  
     args:
-      urlpath: 'zip://*chl_oc3*.json::simplecache::s3://{{refs_bucket}}/IMOS/SRS/OC/gridded/aqua/P1D/agg_monthly/references.zip'
+      urlpath: 'simplecache::zip://IMOS/SRS/OC/gridded/aqua/P1D/agg_monthly/*chl_oc3*.json::{{refs_url}}'
       startdt: '{{startdt}}'
       enddt: '{{enddt}}'
       geom: '{{geom}}'
@@ -79,9 +78,8 @@ sources:
         method: 'nearest'
       storage_options:
         simple_templates: True
-        target_options:
-          profile: default
-        target_protocol: s3
+        target_options: {}
+        target_protocol: http
         remote_options:
           anon: true
         remote_protocol: s3
@@ -107,7 +105,7 @@ sources:
         description: Geometry in Well Known Text format to subset query to
         type: str 
     args:
-      urlpath: 'zip://*chl_gsm*.json::simplecache::s3://{{refs_bucket}}/IMOS/SRS/OC/gridded/aqua/P1D/agg_monthly/references.zip'
+      urlpath: 'simplecache::zip://IMOS/SRS/OC/gridded/aqua/P1D/agg_monthly/*chl_gsm*.json::{{refs_url}}'
       startdt: '{{startdt}}'
       enddt: '{{enddt}}'
       geom: '{{geom}}'
@@ -117,9 +115,8 @@ sources:
         method: 'nearest'
       storage_options:
         simple_templates: True
-        target_options:
-          profile: default
-        target_protocol: s3
+        target_options: {}
+        target_protocol: http
         remote_options:
           anon: true
         remote_protocol: s3
@@ -145,7 +142,7 @@ sources:
         description: Geometry in Well Known Text format to subset query to
         type: str 
     args:
-      urlpath: 'zip://*K_490*.json::simplecache::s3://{{refs_bucket}}/IMOS/SRS/OC/gridded/aqua/P1D/agg_monthly/references.zip'
+      urlpath: 'simplecache::zip://IMOS/SRS/OC/gridded/aqua/P1D/agg_monthly/*K_490*.json::{{refs_url}}'
       startdt: '{{startdt}}'
       enddt: '{{enddt}}'
       geom: '{{geom}}'
@@ -155,9 +152,8 @@ sources:
         method: 'nearest'
       storage_options:
         simple_templates: True
-        target_options:
-          profile: default
-        target_protocol: s3
+        target_options: {}
+        target_protocol: http
         remote_options:
           anon: true
         remote_protocol: s3
