@@ -33,6 +33,7 @@ def get_list_datasets(cat):
     return da_list,ser_list
 
 def time_average(da,dt,**kwargs):
+    import pandas as pd #
     #dt specifies the type of resampling and can take values of 'M', 'Y' or 'DJF' for season
     if len(dt)==3:
         quarters = {'DJF':'Q-Feb','MAM':'Q-May','JJA':'Q-Aug','SON':'Q-Nov'}
@@ -100,6 +101,9 @@ def make_clim(da,time_res='month',**kwargs):
 
 
 def lin_trend(da,coord,deg=1):
+    import xarray as xr
+    import numpy as np
+    from scipy import stats
     
     f=da.polyfit(dim=coord,deg=1)
     fit = xr.polyval(da[coord],f)
@@ -155,22 +159,27 @@ def Clim_plot(da,time_main,time_res,**kwargs):
     return clim,ax
     
     ## correct mapping
-def map(da,lim_lon,lim_lat,cmap,title = 'Map',subpos = 111,**map_kwargs):
+def map_var(da,lim_lon,lim_lat,cmap,title = 'Map',subpos = 111,**map_kwargs):
+    import cartopy
+    import cartopy.crs as ccrs
+    import matplotlib.pyplot as plt
     
-    axpl = da.plot.contourf(transform = ccrs.PlateCarree(),x = 'lon',y='lat',extend='both',cmap=cmap,subplot_kws={'projection':ccrs.PlateCarree()},**map_kwargs)
+    axpl = da.plot.contourf(transform = ccrs.PlateCarree(),x = 'longitude',y='latitude',extend='both',cmap=cmap,subplot_kws={'projection':ccrs.PlateCarree()},**map_kwargs)
     ax = plt.gca()
     gl = plt.gca().gridlines(draw_labels=True)
     gl.top_labels=False
     gl.right_labels=False
-    ax.add_feature(cartopy.feature.LAND,scale = 'high',color = 'grey',edgecolor = 'black')
+    ax.add_feature(cartopy.feature.GSHHSFeature(scale = 'high',facecolor = 'grey',edgecolor = 'black'))
     ax.set_extent(lim_lon+lim_lat)
     ax.set_title(title,fontsize = 20);
     return ax,gl,axpl
 
 # Should be called if no existing cb
 def create_cb(fig,ax,ax_proj,label = '',size = "4%", pad = 0.5,**kwargs):
-    
+    import matplotlib.pyplot as plt
     from mpl_toolkits.axes_grid1 import make_axes_locatable
+    import numpy as np
+    
     divider = make_axes_locatable(ax)
     ax_cb = divider.new_horizontal(size = size, pad = pad, axes_class = plt.Axes)
     fig.add_axes(ax_cb)
