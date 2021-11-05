@@ -76,6 +76,7 @@ class RefZarrStackSource(DataSourceMixin):
         from fsspec.core import url_to_fs
         import shapely.wkt
         import pandas as pd
+        import os
 
         def open_and_crop(fo,
                           storage_options,
@@ -87,6 +88,7 @@ class RefZarrStackSource(DataSourceMixin):
             import json
             import fsspec
 
+            logger.info(f'fo {fo}')
             logger.info(f'storage_options {storage_options}')
 
             with fsspec.open(fo,**{storage_options['target_protocol']:storage_options['target_options']}) as f:
@@ -161,9 +163,10 @@ class RefZarrStackSource(DataSourceMixin):
         loaded_files = []
         for f in ref_files:
             # Assume first six digits year month
-            if f[0:6] in yearmon:
+            ref_file = os.path.basename(f)
+            if ref_file[0:6] in yearmon:
                 loaded_files.append(f)
-                f_url = f'{fs.protocol}://{f}::' + '::'.join(urlparts[1:])
+                f_url = f'simplecache::zip://{f}::{urlparts[-1]}' #f'{fs.protocol}://{f}::' + '::'.join(urlparts[1:])
                 futures.append(d_open_dataset(f_url,**open_kwargs))
         dsets = compute(futures)[0]
         
