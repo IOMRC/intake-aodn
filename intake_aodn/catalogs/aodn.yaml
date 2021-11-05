@@ -46,6 +46,40 @@ sources:
         remote_options:
           anon: true
         remote_protocol: s3
+  SSTAARS_Daily_Climatology:
+    driver: intake_xarray.xzarr.ZarrSource
+    description: 'SST Atlas of Australian Regional Seas (SSTAARS) - Daily climatology fit'    
+    metadata:
+      permalink: https://catalogue-imos.aodn.org.au/geonetwork/srv/eng/catalog.search#/metadata/79c8eea2-4e86-4553-8237-4728e27abe10
+    args:
+      urlpath: 'reference://'
+      storage_options:
+        simple_templates: True
+        fo: 'simplecache::zip://CSIRO/Climatology/SSTAARS/2017/AODN-product/SSTAARS_daily_fit.json::{{refs_url}}'
+        target_options: {}
+        target_protocol: http
+        remote_options:
+          anon: true
+        remote_protocol: s3
+      decode_times: False
+      consolidated: False
+  SSTAARS_Monthly_Climatology:
+    driver: intake_xarray.xzarr.ZarrSource
+    description: 'SST Atlas of Australian Regional Seas (SSTAARS) - Monthly climatology fit'    
+    metadata:
+      permalink: https://catalogue-imos.aodn.org.au/geonetwork/srv/eng/catalog.search#/metadata/79c8eea2-4e86-4553-8237-4728e27abe10
+    args:
+      urlpath: 'reference://'
+      storage_options:
+        simple_templates: True
+        fo: 'simplecache::zip://CSIRO/Climatology/SSTAARS/2017/SSTAARS.json::{{refs_url}}'
+        target_options: {}
+        target_protocol: http
+        remote_options:
+          anon: true
+        remote_protocol: s3
+      decode_times: False
+      consolidated: False
   MODIS_1d_chl_oc3:
     driver: intake_aodn.drivers.RefZarrStackSource
     description: 'IMOS - SRS - MODIS - 01 day - Chlorophyll-a concentration (OC3 model)'    
