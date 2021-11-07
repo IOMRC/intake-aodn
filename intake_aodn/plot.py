@@ -86,6 +86,7 @@ def save_excel(df_list,file_name = "myfile",*args):
                 
                 
 def make_clim(da,time_res='month',**kwargs):
+    import numpy as np
     if 'time_slice' in kwargs:
         ct = da.sel(time=slice(kwargs['time_slice'][0],kwargs['time_slice'][1])).groupby('time.' + time_res).count(dim='time')
         s = da.sel(time=slice(kwargs['time_slice'][0],kwargs['time_slice'][1])).groupby('time.' + time_res).std(dim='time')
@@ -132,13 +133,19 @@ def lin_trend(da,coord,deg=1):
     return f,fit,hci,lci
 
 
-def Clim_plot(da,time_main,time_res,**kwargs):
+def Clim_plot(da,time_res,time_main=0,**kwargs):
+    import matplotlib.pyplot as plt1
+    import datetime
+    
+    if time_main == 0:
+        time_main=[da.time.min(),da.time.max()]
+
     col_yr = ['red', 'blue', 'green', 'yellow', 'purple'] # this could be extended for more years
     
-    fig, ax = plt.subplots(figsize=(7, 4))
+    fig, ax = plt1.subplots(figsize=(7, 4))
     clim,h95,l95 = make_clim(da,time_res,time_slice=time_main)
     clim.plot(label='Clim',color = 'black')
-    plt.fill_between(h95[time_res],l95,h95,alpha=0.5,color='grey')
+    plt1.fill_between(h95[time_res],l95,h95,alpha=0.5,color='grey')
     if 'time_recent' in kwargs:
         tt = make_clim(da,time_res,time_slice= kwargs['time_recent'])[0].plot(label='Recent',color = 'black',linestyle='dashed')
     if 'ind_yr' in kwargs:
@@ -150,12 +157,12 @@ def Clim_plot(da,time_main,time_res,**kwargs):
             i+=1
             
     xl = clim.coords[time_res].values
-    plt.xlim(xl.min(),xl.max())
+    plt1.xlim(xl.min(),xl.max())
     if time_res == 'month':
         ax.set_xticks([2,4,6,8,10,12])
         tlab = [datetime.date(1990,x,1).strftime('%b') for x in ax.get_xticks().astype(int) if x > 0 and x <13]
         ax.set_xticklabels([datetime.date(1990,x,1).strftime('%b') for x in [2,4,6,8,10,12]])
-    plt.legend(loc = 'lower left')
+    plt1.legend(loc = 'lower left')
     return clim,ax
     
     ## correct mapping
@@ -186,3 +193,15 @@ def create_cb(fig,ax,ax_proj,label = '',size = "4%", pad = 0.5,**kwargs):
     cb = plt.colorbar(ax_proj,cax = ax_cb)
     cb.set_label(label,**kwargs)
     return cb
+
+def netcdf_save(data,filename):
+# Need to drop the "NAME" and "_Netcdf4Dimid" which are reserved when writing back out to netCDF
+# Unclear why they are in the dataset
+            
+    # Unclear why they are in the dataset
+    for v in data.variables:
+        for bad_attr in ['_Netcdf4Dimid','NAME']:
+            if bad_attr in data[v].attrs.keys():
+                del data[v].attrs[bad_attr]
+
+    data.to_netcdf(filename + '.nc')
