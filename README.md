@@ -14,8 +14,8 @@ This repository makes use of the kerchunk library to map the binary chunk layout
 
 This repository contains a collection of intake catalogs and drivers to access AODN data directly in AWS S3 and demonstration notebooks that show how to utilise the drivers and reference sets. All binary chunk references are stored in this repository in a zip file, so that the approach can be utilised from anywhere. NOTE: that the bandwidth utilisation is high as to retrieve a single pixel, a complete chunk must be downloaded and uncompressed which may be several MB per time point. Therefore it is best to run these notebooks from AWS, or from a network with good connectivity. 
 
-Authors:
-@pbranson
-@NickMortimer
-@maximemarin
-@dirkslawinski
+Contributors:
+(@pbranson)[https://github.com/pbranson]
+(@NickMortimer)[https://github.com/NickMortimer]
+(@maximemarin)[https://github.com/maximemarin]
+(@dirkslawinski)[https://github.com/dirkslawinski]
