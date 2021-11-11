@@ -68,6 +68,53 @@ def get_list_datasets(cat):
         
     return da_list,ser_list
 
+def get_default_time(entry):
+    from datetime import datetime
+    import pandas as pd
+    
+    param = entry.describe()['user_parameters']
+    startdt = list(filter(lambda mini: mini['name']=='startdt',param))[0]
+    enddt = list(filter(lambda mini: mini['name']=='enddt',param))[0]
+    startdt = startdt['min'].date().strftime('%Y-%m-%d')
+    enddt = enddt['min'].date().strftime('%Y-%m-%d')
+    return startdt, enddt
+
+def dw_data(dataset,coord,time_start,time_end,load_type = 'read'):
+    import intake_aodn
+    #from datetime import datetime
+    from intake_aodn.utils import display_entry 
+    from intake_aodn.utils import get_list_datasets
+    from intake_aodn.utils import get_default_time
+    from datetime import datetime
+
+    
+    catal = intake_aodn.cat
+    da_list,ser_list = get_list_datasets(catal)  
+    lat = coord[1]
+    lon = coord[0]
+    
+    [startdt,enddt] = get_default_time(eval('intake_aodn.cat.' + ser_list[da_list.index(dataset)] + '.' + dataset))
+    
+    if datetime.strptime(time_start,'%Y-%m-%d')<datetime.strptime(startdt,'%Y-%m-%d'):
+        raise ValueError('start time: %s is before the minimum date: %s' % (datetime.strptime(time_start,'%Y-%m-%d'),startdt))
+        
+    if datetime.strptime(time_end,'%Y-%m-%d')<datetime.strptime(enddt,'%Y-%m-%d'):
+        raise ValueError('end time: %s is after the maximum date: %s' % (datetime.strptime(end_start,'%Y-%m-%d'),enddt))
+    
+    if isinstance(lat,float) and isinstance(lon,float): #point
+        argum = "(startdt='" + time_start + "',enddt='" + time_end + "',cropto=dict(latitude=lat,longitude=lon,method = 'nearest'))." + load_type + "()"
+
+    elif isinstance(lat,list) and isinstance(lon,list): #box
+        lat.sort()# note that for slice, index order is necessary rather than coordinate order. In this product, latitude is indexed from high to low values
+        lon.sort()# this might have to be modified for datasets which list latitude in increasing order.
+        
+        argum = "(startdt='" + time_start + "',enddt='" + time_end + "',cropto=dict(latitude=slice(lat[1],lat[0]),longitude=slice(lon[0],lon[1])))." + load_type + "()" 
+    else:
+        print('Coordinates not a point or orthogonal box')
+        
+    ds  = eval('intake_aodn.cat.' + ser_list[da_list.index(dataset)] + '.' + dataset + argum)
+    return ds
+
 def save_netcdf(data,filename):
 # Need to drop the "NAME" and "_Netcdf4Dimid" which are reserved when writing back out to netCDF
 # Unclear why they are in the dataset
