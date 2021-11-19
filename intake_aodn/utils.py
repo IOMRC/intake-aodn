@@ -73,13 +73,12 @@ def get_default_time(entry):
     import pandas as pd
     
     param = entry.describe()['user_parameters']
-    startdt = list(filter(lambda mini: mini['name']=='startdt',param))[0]
-    enddt = list(filter(lambda mini: mini['name']=='enddt',param))[0]
-    startdt = startdt['min'].date().strftime('%Y-%m-%d')
-    enddt = enddt['min'].date().strftime('%Y-%m-%d')
+    info = list(filter(lambda mini: mini['name']=='startdt',param))[0]
+    startdt = info['min'].date().strftime('%Y-%m-%d')
+    enddt = info['max'].date().strftime('%Y-%m-%d')
     return startdt, enddt
 
-def dw_data(dataset,coord,time_start,time_end,load_type = 'read'):
+def dw_data(dataset,coord,time_start=None,time_end=None,load_type = 'read'):
     import intake_aodn
     #from datetime import datetime
     from intake_aodn.utils import display_entry 
@@ -95,10 +94,14 @@ def dw_data(dataset,coord,time_start,time_end,load_type = 'read'):
     
     [startdt,enddt] = get_default_time(eval('intake_aodn.cat.' + ser_list[da_list.index(dataset)] + '.' + dataset))
     
-    if datetime.strptime(time_start,'%Y-%m-%d')<datetime.strptime(startdt,'%Y-%m-%d'):
+    if time_start is None:
+        time_start = startdt
+    elif datetime.strptime(time_start,'%Y-%m-%d')<datetime.strptime(startdt,'%Y-%m-%d'):
         raise ValueError('start time: %s is before the minimum date: %s' % (datetime.strptime(time_start,'%Y-%m-%d'),startdt))
         
-    if datetime.strptime(time_end,'%Y-%m-%d')<datetime.strptime(enddt,'%Y-%m-%d'):
+    if time_end is None:
+        time_end = enddt
+    elif datetime.strptime(time_end,'%Y-%m-%d')<datetime.strptime(enddt,'%Y-%m-%d'):
         raise ValueError('end time: %s is after the maximum date: %s' % (datetime.strptime(end_start,'%Y-%m-%d'),enddt))
     
     if isinstance(lat,float) and isinstance(lon,float): #point

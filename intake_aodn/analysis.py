@@ -26,7 +26,7 @@ def make_clim(da,time_res='month',**kwargs):
 
 
 
-def time_average(da,dt,**kwargs):
+def time_average(da,dt,var,**kwargs):
     import pandas as pd #
     #dt specifies the type of resampling and can take values of 'M', 'Y' or 'DJF' for season
     if len(dt)==3:
@@ -37,17 +37,17 @@ def time_average(da,dt,**kwargs):
         t_unit = 'Y'
         # Method 1: ignores incomplete seasons
         if kwargs['ignore_inc']:
-            avg_da=da[kwargs['var']].resample(time=dt_q).mean(skipna = True)
+            avg_da=da[var].resample(time=dt_q).mean(skipna = True)
             avg_da = avg_da.sel(time=avg_da['time.month']==m).groupby('time.year').mean()
         else:
         # Method2: replaces incomplete seasons with Na
-            avg_da=da[kwargs['var']].resample(time='1M').mean()
+            avg_da=da[var].resample(time='1M').mean()
             avg_da = da.where(avg_da.time.dt.season==dt).rolling(min_periods=3,center=True,time=3).mean()
-            avg_da = avg_da.groupby('time.year').mean('time')[kwargs['var']]
+            avg_da = avg_da.groupby('time.year').mean('time')[var]
     else:
         t_unit = dt
         dt = '1'+dt
-        avg_da=da[kwargs['var']].resample(time=dt).mean(skipna=True)
+        avg_da=da[var].resample(time=dt).mean(skipna=True)
         avg_da['time'] = avg_da.time.astype('datetime64[' + t_unit +']')
         if not kwargs['ignore_inc']:
             ext_time = avg_da['time'][[0, len(avg_da['time'])-1]]
