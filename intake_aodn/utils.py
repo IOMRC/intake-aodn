@@ -18,11 +18,11 @@ def get_local_cluster():
         client = Client(cluster)
     return client
 
-def get_distributed_cluster(worker_cores=1,worker_memory=2.0, min_workers=1, max_workers=64):
+def get_distributed_cluster(worker_cores=1,worker_memory=2.0, min_workers=1, max_workers=64, worker_threads=None):
     from dask.distributed import Client
     from dask_gateway import Gateway
 
-    if worker_cores > 4:
+    if worker_cores > 8:
         raise ValueError('Please dont create a worker larger than 4 cores')
 
     # Dask gateway
@@ -32,6 +32,7 @@ def get_distributed_cluster(worker_cores=1,worker_memory=2.0, min_workers=1, max
         print('Creating new cluster. Please wait for this to finish.')
         options = gateway.cluster_options()
         options.worker_cores = worker_cores
+        options.worker_threads = worker_threads or worker_cores
         options.worker_memory = worker_memory
         cluster = gateway.new_cluster(cluster_options=options)
     else:
