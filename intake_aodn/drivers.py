@@ -7,7 +7,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 from intake_xarray.base import DataSourceMixin
-from pandas import to_datetime
+import pandas as pd
 
 import logging
 import warnings
@@ -46,9 +46,24 @@ class RefZarrStackSource(DataSourceMixin):
                  metadata=None,
                  **kwargs):
         
+        if enddt == pd.Timestamp('1970-01-01 00:00:00'):
+            enddt = pd.Timestamp.now()
+            # warnings.warn(f'enddt was not specified, defaulting to {enddt}')
+        else:
+            enddt = pd.to_datetime(enddt)
+        
+        if startdt == pd.Timestamp('1970-01-01 00:00:00'):
+            startdt = enddt - pd.DateOffset(months=1)
+            # warnings.warn(f'startdt was not specified, defaulting to {startdt}')
+        else:
+            startdt = pd.to_datetime(startdt)
+            
+        if startdt > enddt:
+            raise ValueError(f'Invalid dates, startdt:{startdt} is after enddt:{enddt}')
+        
         self.urlpath = urlpath
-        self.startdt = to_datetime(startdt)
-        self.enddt = to_datetime(enddt)
+        self.startdt = startdt
+        self.enddt = enddt
         self.cropto = cropto
         self.geom = geom
         self.storage_options = storage_options
