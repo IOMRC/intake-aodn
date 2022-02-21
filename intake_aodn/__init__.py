@@ -1,17 +1,11 @@
+import os
 import intake  # Import this first to avoid circular imports during discovery.
 from .drivers import RefZarrStackSource
 
 import logging
-import warnings
 logger = logging.getLogger('intake-aodn')
 
-import os
-import intake
+cat = intake.open_catalog("https://raw.githubusercontent.com/IOMRC/intake-aodn/main/intake_aodn/catalogs/main.yaml")
 
-here = os.path.abspath(os.path.dirname(__file__))
-aodn_cat_path = os.path.join(here, "catalogs")
-if "INTAKE_PATH" in os.environ.keys(): 
-    os.environ["INTAKE_PATH"] =  f'{os.environ["INTAKE_PATH"]}:{aodn_cat_path}'
-else:
-    os.environ["INTAKE_PATH"] =  f'{aodn_cat_path}'
-cat = intake.open_catalog(os.path.join(aodn_cat_path, 'main.yaml'))
+from . import _version
+__version__ = _version.get_versions()['version']

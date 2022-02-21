@@ -1,10 +1,5 @@
 metadata:
   version: 1
-  parameters:
-    refs_url:
-      type: str
-      description: The URL where the reference index zipfile is located
-      default: https://github.com/IOMRC/intake-aodn/raw/main/intake_aodn/catalogs/aodn_refs.zip #imos-data-pixeldrill-refs
 sources:
   SST_L3S_1d_ngt:
     driver: intake_aodn.drivers.RefZarrStackSource
@@ -13,22 +8,16 @@ sources:
       permalink: https://catalogue-imos.aodn.org.au/geonetwork/srv/eng/catalog.search#/metadata/aaad092c-c3af-42e6-87e0-bdaef945f522
     parameters:
       startdt:
-        description: Start date of request
-        type: datetime  
-        min: "1992-03-21" 
-        max: "2021-06-30" 
-        default: "2021-06-01"
+        description: Start date of request (defaults to one month ago)
+        type: datetime   
       enddt:
-        description: End date of request
+        description: End date of request (defaults to today)
         type: datetime  
-        min: "1992-03-22"  
-        max: "2021-06-30" 
-        default: "2021-06-30"
       geom:
         description: Geometry in Well Known Text format to subset query to
         type: str 
     args:
-      urlpath: 'simplecache::zip://IMOS/SRS/SST/ghrsst/L3S-1d/ngt/agg_monthly/*.json::{{refs_url}}'
+      urlpath: 'simplecache::zip://imos-data/IMOS/SRS/SST/ghrsst/L3S-1d/ngt/*.json::{{CATALOG_DIR}}/aodn_refs.zip'
       startdt: '{{startdt}}'
       enddt: '{{enddt}}'
       geom: '{{geom}}'
@@ -55,7 +44,7 @@ sources:
       urlpath: 'reference://'
       storage_options:
         simple_templates: True
-        fo: 'simplecache::zip://CSIRO/Climatology/SSTAARS/2017/AODN-product/SSTAARS_daily_fit.json::{{refs_url}}'
+        fo: 'simplecache::zip://imos-data/CSIRO/Climatology/SSTAARS/2017/AODN-product/SSTAARS_daily_fit.json::{{CATALOG_DIR}}/aodn_refs.zip'
         target_options: {}
         target_protocol: http
         remote_options:
@@ -72,7 +61,7 @@ sources:
       urlpath: 'reference://'
       storage_options:
         simple_templates: True
-        fo: 'simplecache::zip://CSIRO/Climatology/SSTAARS/2017/SSTAARS.json::{{refs_url}}'
+        fo: 'simplecache::zip://imos-data/CSIRO/Climatology/SSTAARS/2017/SSTAARS.json::{{CATALOG_DIR}}/aodn_refs.zip'
         target_options: {}
         target_protocol: http
         remote_options:
@@ -89,20 +78,14 @@ sources:
       startdt:
         description: Start date of request
         type: datetime  
-        min: "1992-03-21" 
-        max: "2021-06-30" 
-        default: "2021-06-01"
       enddt:
         description: End date of request
         type: datetime  
-        min: "1992-03-22"  
-        max: "2021-06-30" 
-        default: "2021-06-30"
       geom:
         description: Geometry in Well Known Text format to subset query to
         type: str  
     args:
-      urlpath: 'simplecache::zip://IMOS/SRS/OC/gridded/aqua/P1D/agg_monthly/*chl_oc3*.json::{{refs_url}}'
+      urlpath: 'simplecache::zip://imos-data/IMOS/SRS/OC/gridded/aqua/P1D/*chl_oc3*.json::{{CATALOG_DIR}}/aodn_refs.zip'
       startdt: '{{startdt}}'
       enddt: '{{enddt}}'
       geom: '{{geom}}'
@@ -126,20 +109,14 @@ sources:
       startdt:
         description: Start date of request
         type: datetime  
-        min: "1992-03-21" 
-        max: "2021-06-30" 
-        default: "2021-06-01"
       enddt:
         description: End date of request
         type: datetime  
-        min: "1992-03-22"  
-        max: "2021-06-30" 
-        default: "2021-06-30"
       geom:
         description: Geometry in Well Known Text format to subset query to
         type: str 
     args:
-      urlpath: 'simplecache::zip://IMOS/SRS/OC/gridded/aqua/P1D/agg_monthly/*chl_gsm*.json::{{refs_url}}'
+      urlpath: 'simplecache::zip://imos-data/IMOS/SRS/OC/gridded/aqua/P1D/*chl_gsm*.json::{{CATALOG_DIR}}/aodn_refs.zip'
       startdt: '{{startdt}}'
       enddt: '{{enddt}}'
       geom: '{{geom}}'
@@ -163,20 +140,14 @@ sources:
       startdt:
         description: Start date of request
         type: datetime  
-        min: "1992-03-21" 
-        max: "2021-06-30" 
-        default: "2021-06-01"
       enddt:
         description: End date of request
         type: datetime  
-        min: "1992-03-22"  
-        max: "2021-06-30" 
-        default: "2021-06-30"
       geom:
         description: Geometry in Well Known Text format to subset query to
         type: str 
     args:
-      urlpath: 'simplecache::zip://IMOS/SRS/OC/gridded/aqua/P1D/agg_monthly/*K_490*.json::{{refs_url}}'
+      urlpath: 'simplecache::zip://imos-data/IMOS/SRS/OC/gridded/aqua/P1D/*K_490*.json::{{CATALOG_DIR}}/aodn_refs.zip'
       startdt: '{{startdt}}'
       enddt: '{{enddt}}'
       geom: '{{geom}}'

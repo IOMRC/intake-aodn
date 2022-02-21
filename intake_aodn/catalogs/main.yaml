@@ -1,13 +1,13 @@
 sources:
   aodn_s3:
     args:
-      path: '{{CATALOG_DIR}}aodn.yaml'
+      path: '{{CATALOG_DIR}}/aodn.yaml'
     description: 'AODN datasets indexed and available on AWS S3'
     driver: intake.catalog.local.YAMLFileCatalog
     metadata: {}
   nci:
     args:
-      path: '{{CATALOG_DIR}}nci.yaml'
+      path: '{{CATALOG_DIR}}/nci.yaml'
     description: 'Datasets available on NCI Thredds Server'
     driver: intake.catalog.local.YAMLFileCatalog
     metadata: {}

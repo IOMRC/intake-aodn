@@ -1,0 +1,3 @@
+include intake_aodn/catalogs/*
+include versioneer.py
+include intake_aodn/_version.py
