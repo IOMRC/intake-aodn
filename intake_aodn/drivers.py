@@ -72,18 +72,25 @@ class RefZarrStackSource(DataSourceMixin):
         self._ds = None
         self._load_data = False
         super(RefZarrStackSource, self).__init__(metadata=metadata, **kwargs)
-
+        
+    def clean_attrs(self,ds):
+        """ remove some attrs that prevent simple save to netcdf """
+        for v in ds.variables:
+            for bad_attr in ['_Netcdf4Dimid','NAME']:
+                if bad_attr in ds[v].attrs.keys():
+                    del ds[v].attrs[bad_attr]
+        return ds
     def to_dask(self):
         """Return xarray object where variables are dask arrays"""
         self._load_data = False
         self._load_metadata()
-        return self._ds
+        return self.clean_attrs(self._ds)
 
     def read(self):
         """Return xarray object where variables are dask arrays"""
         self._load_data = True
         self._load_metadata()
-        return self._ds
+        return self.clean_attrs(self._ds)
 
     def _open_dataset(self):
         import xarray as xr
@@ -163,7 +170,7 @@ class RefZarrStackSource(DataSourceMixin):
 
         logger.info(f'open_kwargs: {open_kwargs}')
 
-        yearmon = sorted(set(pd.date_range(self.startdt,self.enddt,closed='left').strftime('%Y%m')))
+        yearmon = sorted(set(pd.date_range(self.startdt,self.enddt,inclusive='left').strftime('%Y%m')))
         logger.info(f'Loading Months {yearmon}')
 
         # Get the list of json files from the reference zip

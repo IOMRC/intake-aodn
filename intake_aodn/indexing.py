@@ -119,7 +119,8 @@ def process_aggregate(root='imos-data/IMOS/SRS/SST/ghrsst/L3S-1d/ngt/',
                     refs,
                     remote_protocol="s3",
                     remote_options=storage_options,
-                    xarray_concat_args=dict(dim='time',coords='minimal',join='override',compat='override',combine_attrs='override', fill_value=''),
+                    concat_dims=["time"], coo_map={"time": "data:time"},
+                    # xarray_concat_args=dict(dim='time',coords='minimal',join='override',compat='override',combine_attrs='override', fill_value=''),
                     preprocess=preprocess
                 )
                 
