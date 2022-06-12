@@ -73,13 +73,7 @@ class RefZarrStackSource(DataSourceMixin):
         self._load_data = False
         super(RefZarrStackSource, self).__init__(metadata=metadata, **kwargs)
         
-    def clean_attrs(self,ds):
-        """ remove some attrs that prevent simple save to netcdf """
-        for v in ds.variables:
-            for bad_attr in ['_Netcdf4Dimid','NAME']:
-                if bad_attr in ds[v].attrs.keys():
-                    del ds[v].attrs[bad_attr]
-        return ds
+
     def to_dask(self):
         """Return xarray object where variables are dask arrays"""
         self._load_data = False
@@ -99,7 +93,13 @@ class RefZarrStackSource(DataSourceMixin):
         import shapely.wkt
         import pandas as pd
         import os
-
+        def clean_attrs(ds):
+            """ remove some attrs that prevent simple save to netcdf """
+            for v in ds.variables:
+                for bad_attr in ['_Netcdf4Dimid','NAME']:
+                    if bad_attr in ds[v].attrs.keys():
+                        del ds[v].attrs[bad_attr]
+            return ds
         def open_and_crop(fo,
                           storage_options,
                           time=None,
@@ -205,4 +205,4 @@ class RefZarrStackSource(DataSourceMixin):
         if not self._load_data:
             ds = ds.chunk(self.chunks)
 
-        self._ds = ds
+        self._ds = clean_attrs(ds)

@@ -38,6 +38,22 @@ def open_single(fn,preprocess=None,storage_options=dict(anon=True)):
     
     return ds
 
+def keep_fields(fields):
+    """Return filter function that keeps variables in the list"""
+    fields = fields
+    # keep the fields that we want!
+    def preproc(refs):
+        for k in list(refs):
+            drop = True
+            for field in fields:
+                if k.startswith(field):
+                    drop=False
+            if drop:
+                refs.pop(k)
+        return refs
+    return preproc
+
+
 def process_aggregate(root='imos-data/IMOS/SRS/SST/ghrsst/L3S-1d/ngt/',
                        year='2021',
                        month='07',
@@ -120,7 +136,6 @@ def process_aggregate(root='imos-data/IMOS/SRS/SST/ghrsst/L3S-1d/ngt/',
                     remote_protocol="s3",
                     remote_options=storage_options,
                     concat_dims=["time"], coo_map={"time": "data:time"},
-                    # xarray_concat_args=dict(dim='time',coords='minimal',join='override',compat='override',combine_attrs='override', fill_value=''),
                     preprocess=preprocess
                 )
                 
