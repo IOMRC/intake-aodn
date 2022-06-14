@@ -78,13 +78,13 @@ class RefZarrStackSource(DataSourceMixin):
         """Return xarray object where variables are dask arrays"""
         self._load_data = False
         self._load_metadata()
-        return self.clean_attrs(self._ds)
+        return self._ds
 
     def read(self):
         """Return xarray object where variables are dask arrays"""
         self._load_data = True
         self._load_metadata()
-        return self.clean_attrs(self._ds)
+        return self._ds
 
     def _open_dataset(self):
         import xarray as xr
