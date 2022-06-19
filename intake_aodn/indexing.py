@@ -64,7 +64,9 @@ def process_aggregate(root='imos-data/IMOS/SRS/SST/ghrsst/L3S-1d/ngt/',
                        check_chunking=None,
                        preprocess=None,
                        storage_options=dict(anon=True),
-                       dask=False
+                       dask=False,
+                       concat_dims=["time","lat","lon"],
+                      coo_map={"time": "data:time","lat":"data:lat","lon":"data:lon"}
                       ):
     import zipfile
     import fsspec
@@ -135,7 +137,8 @@ def process_aggregate(root='imos-data/IMOS/SRS/SST/ghrsst/L3S-1d/ngt/',
                     refs,
                     remote_protocol="s3",
                     remote_options=storage_options,
-                    concat_dims=["time"], coo_map={"time": "data:time"},
+                    concat_dims=concat_dims, 
+                    coo_map=coo_map,
                     preprocess=preprocess
                 )
                 
