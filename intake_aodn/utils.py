@@ -18,7 +18,7 @@ def get_local_cluster():
         client = Client(cluster)
     return client
 
-def get_distributed_cluster(worker_cores=1,worker_memory=2.0, min_workers=1, max_workers=64, worker_threads=None):
+def get_distributed_cluster(worker_cores=1,worker_memory=2.0, min_workers=1, max_workers=64, worker_threads=None,force_new=False):
     from dask.distributed import Client
     from dask_gateway import Gateway
     
@@ -31,7 +31,7 @@ def get_distributed_cluster(worker_cores=1,worker_memory=2.0, min_workers=1, max
     # Dask gateway
     gateway = Gateway()
     clusters = gateway.list_clusters()
-    if not clusters:
+    if not clusters or force_new:
         print('Creating new cluster. Please wait for this to finish.')
         options = gateway.cluster_options()
         options.worker_cores = worker_cores
