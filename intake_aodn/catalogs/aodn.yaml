@@ -162,3 +162,16 @@ sources:
         remote_options:
           anon: true
         remote_protocol: s3
+  CPR:
+    args:
+      urlpath: simplecache::http://geoserver-portal.aodn.org.au/geoserver/ows?typeName=imos:cpr_derived_indices_data&SERVICE=WFS&outputFormat=csv&REQUEST=GetFeature&VERSION=1.0.0&userId=Guest
+      csv_kwargs:
+        blocksize: 
+    description: CPR Data 
+    driver: csv
+    metadata:
+      permalink: https://catalogue-imos.aodn.org.au/geonetwork/srv/eng/catalog.search#/metadata/bf287dfe-9ce4-4969-9c59-51c39ea4d011
+      catalog_dir: ''
+
+
+
