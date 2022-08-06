@@ -19,7 +19,12 @@ from .drivers import RefZarrStackSource
 # if os.path.exists(cat_path):
 #     cat = intake.open_catalog(os.path.join(aodn_cat_path, 'main.yaml'))
 # else:
+
+
+
 cat_url = "https://raw.githubusercontent.com/IOMRC/intake-aodn/main/intake_aodn/catalogs/main.yaml"
+
+
 cat = intake.open_catalog(cat_url)
     # warnings.warn(f'Local catalog not found, loading catalog from github {cat_url}')
 
