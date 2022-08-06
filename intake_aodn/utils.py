@@ -7,14 +7,14 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-def get_local_cluster():
+def get_local_cluster(n_workers=8,threads_per_worker=1):
     import dask
     from distributed import Client, LocalCluster
     dask.config.config.get('distributed').get('dashboard').update({'link':'{JUPYTERHUB_SERVICE_PREFIX}proxy/{port}/status'})
     try:
         client = Client('tcp://localhost:8786', timeout='1s')
     except OSError:
-        cluster = LocalCluster(scheduler_port=8786)
+        cluster = LocalCluster(n_workers=n_workers,threads_per_worker=threads_per_worker,scheduler_port=8786)
         client = Client(cluster)
     return client
 

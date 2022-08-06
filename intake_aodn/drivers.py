@@ -8,9 +8,16 @@
 #-----------------------------------------------------------------------------
 from intake_xarray.base import DataSourceMixin
 import pandas as pd
-
+import xarray as xr
+from dask import delayed, compute
+from fsspec.core import url_to_fs
+import shapely.wkt
+import pandas as pd
+import os
 import logging
 import warnings
+import json
+import fsspec
 logger = logging.getLogger('intake-aodn')
 
 class RefZarrStackSource(DataSourceMixin):
@@ -22,7 +29,7 @@ class RefZarrStackSource(DataSourceMixin):
  
     startdt, enddt: datetime
         Start and end dates used to retrieve AODN data and crop final stacked dataset to.
-    geom: str
+    geom: str 
         Polygon with geographical coordinates (minLon,minLat,minLon,maxLat,maxLon,maxLat,maxLon,minLat,minLon,minLat).
         Some examples:
             - 'POLYGON ((111.0000000000000000 -33.0000000000000000, 111.0000000000000000 -31.5000000000000000, 115.8000030517578125 -31.5000000000000000, 115.8000030517578125 -33.0000000000000000, 111.0000000000000000 -33.0000000000000000))'
@@ -40,6 +47,7 @@ class RefZarrStackSource(DataSourceMixin):
                  enddt,
                  cropto={},
                  geom="",
+                 variables = None,
                  storage_options=None,
                  chunks='auto', 
                  rename_fields=None,
@@ -68,6 +76,7 @@ class RefZarrStackSource(DataSourceMixin):
         self.geom = geom
         self.storage_options = storage_options
         self.chunks = chunks
+        self.variables = variables
         self.rename_fields = rename_fields 
         self._ds = None
         self._load_data = False
@@ -85,14 +94,37 @@ class RefZarrStackSource(DataSourceMixin):
         self._load_data = True
         self._load_metadata()
         return self._ds
-
-    def _open_dataset(self):
-        import xarray as xr
-        from dask import delayed, compute
+    
+    def print(self):
         from fsspec.core import url_to_fs
-        import shapely.wkt
         import pandas as pd
         import os
+        import json
+        import fsspec
+        import xarray as xr
+        yearmon = sorted(set(pd.date_range(self.startdt,self.enddt,inclusive='left').strftime('%Y%m')))
+        logger.info(f'Printing Months {yearmon}')
+        # Get the list of json files from the reference zip
+        urlparts = self.urlpath.split('::')
+        fs, urlpath = url_to_fs(self.urlpath) #,**{self.storage_options['target_protocol']:self.storage_options['target_options']}
+        logger.info(f'Scanning {fs} {urlpath}')
+        ref_files = fs.glob(urlpath)
+        logger.debug(ref_files)
+        for f in ref_files:
+            # Assume first six digits year month
+            ref_file = os.path.basename(f)
+            if ref_file[0:6] in yearmon:
+                f_url = f'simplecache::zip://{f}::{urlparts[-1]}' #f'{fs.protocol}://{f}::' + '::'.join(urlparts[1:])
+                with fsspec.open(f_url) as f: #,**{self.storage_options['target_protocol']:self.storage_options['target_options']}
+                    json_payload = json.load(f)
+                    mapper=fsspec.get_mapper('reference://',
+                                             fo=json_payload,
+                                             **self.storage_options)
+                    ds = xr.open_zarr(mapper,chunks={'time':14},consolidated=False) 
+                    
+
+
+    def _open_dataset(self):
         def clean_attrs(ds):
             """ remove some attrs that prevent simple save to netcdf """
             for v in ds.variables:
@@ -107,19 +139,20 @@ class RefZarrStackSource(DataSourceMixin):
                           varmap=None,
                           load_data=False):
 
-            import json
-            import fsspec
+
 
             logger.info(f'fo {fo}')
             logger.info(f'storage_options {storage_options}')
 
-            with fsspec.open(fo,**{storage_options['target_protocol']:storage_options['target_options']}) as f:
+            with fsspec.open(fo) as f: #,**{storage_options['target_protocol']:storage_options['target_options']}
                 json_payload = json.load(f)
                 mapper=fsspec.get_mapper('reference://',
                                          fo=json_payload,
-                                         **storage_options)
+                                         **{'simple_templates': True, 'target_options': {}, 'target_protocol': 's3', 'remote_options': {'anon': True}, 'remote_protocol': 's3'}) #storage_options
                 ds = xr.open_zarr(mapper,chunks={'time':14},consolidated=False) 
-
+                #ds['lat'] = ds.lat[::-1]
+                # if self.variables is not None:
+                #     ds  = ds[self.variables]
                 logger.debug(f'Dataset : {ds}')
 
                 if time is not None:
@@ -155,16 +188,24 @@ class RefZarrStackSource(DataSourceMixin):
         logger.info(f'geom:{self.geom}')
 
         # Establish crop parameter to pass to open
-        if self.geom:
-            lon, lat = shapely.wkt.loads(self.geom).exterior.coords.xy
-            self.cropto['latitude']=slice(max(lat),min(lat))
-            self.cropto['longitude']=slice(min(lon),max(lon))
-            self.cropto['method']=None
-                
+        # if self.geom:
+        #     lon, lat = shapely.wkt.loads(self.geom).exterior.coords.xy
+        #     self.cropto['latitude']=slice(max(lat),min(lat))
+        #     self.cropto['longitude']=slice(min(lon),max(lon))
+        #     self.cropto['method']=None       
         open_kwargs = {}
         open_kwargs['storage_options'] = self.storage_options
         open_kwargs['time'] = slice(self.startdt,self.enddt)
-        open_kwargs['cropto'] = self.cropto
+        if hasattr(self.cropto, 'bounds'):
+                    crop ={}
+                    lonmin,latmin=self.cropto.bounds.min()[['minx','miny']]
+                    lonmax,latmax=self.cropto.bounds.max()[['maxx','maxy']]                    
+                    crop['latitude']=slice(latmax,latmin)
+                    crop['longitude']=slice(lonmin,lonmax)
+                    crop['method']=None
+                    open_kwargs['cropto'] = crop
+        else:
+            open_kwargs['cropto'] = self.cropto
         open_kwargs['varmap'] = self.rename_fields
         open_kwargs['load_data'] = self._load_data
 
@@ -197,9 +238,14 @@ class RefZarrStackSource(DataSourceMixin):
                 logger.warning('Failed to open: ' + loaded_files[i])
                 
         dsets = [ds for ds in dsets if ds is not None]
-        
-        xarray_concat_kwargs = dict(dim='time',coords='minimal',join='override',compat='override',combine_attrs='override')
+        commonvars = list(set.intersection(*list((map(lambda x:set([i for i in x.data_vars]),dsets)))))
+        dsets = [ds[commonvars] for ds in dsets]
+        xarray_concat_kwargs = dict(dim='time',coords='minimal',join='override',compat='override',combine_attrs='override',data_vars='minimal')        
         ds = xr.concat(dsets, **xarray_concat_kwargs)
+        # from shapely.geometry import mapping
+        # ds =ds.rio.set_spatial_dims(x_dim="longitude", y_dim="latitude", inplace=True)
+        # ds.rio.write_crs("epsg:4326", inplace=True)
+        # ds = ds.rio.clip(self.cropto.geometry.apply(mapping), self.cropto.crs, drop=False)
         ds = ds.sortby('time') # The sort is beneficial to re-order the data according to the coordinate, as having separate stacks for the different layouts breaks the ordering.
 
         if not self._load_data:

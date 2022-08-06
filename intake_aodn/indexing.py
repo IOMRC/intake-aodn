@@ -74,88 +74,90 @@ def process_aggregate(root='imos-data/IMOS/SRS/SST/ghrsst/L3S-1d/ngt/',
     
     fs = fsspec.filesystem('s3',use_listings_cache=False,**storage_options)
     mask = mask.format(year=year,month=month)
-    globstr = f"s3://{root}{mask}*{suffix}.{extension}"
-    urls = fs.glob(globstr)
-    
-    print(f'Aggregating {globstr} - {len(urls)} found.')
-        
-    if len(urls) >= 1:
-        so = dict(
-            protocol='s3',
-            profile='default', 
-            default_fill_cache=False, 
-            default_cache_type='first',
-        )
-        
-        print('Loading references...')
-        if dask:
-            print('... using dask ...')
-            from dask import delayed, compute
-            d_process_single = delayed(process_single)
-            futures = [d_process_single(u) for u in urls]
-            ref_dicts = compute(futures)[0]
+    if not os.path.exists(os.path.join(dest,f"{root}{year}{month}{suffix}_a.json")):
+        globstr = f"s3://{root}{mask}*{suffix}.{extension}"
+        urls = fs.glob(globstr)
+
+        print(f'Aggregating {globstr} - {len(urls)} found.')
+
+        if len(urls) >= 1:
+            so = dict(
+                protocol='s3',
+                profile='default', 
+                default_fill_cache=False, 
+                default_cache_type='first',
+            )
+
+            print('Loading references...')
+            if dask:
+                print('... using dask ...')
+                from dask import delayed, compute
+                d_process_single = delayed(process_single)
+                futures = [d_process_single(u) for u in urls]
+                ref_dicts = compute(futures)[0]
+            else:
+                from tqdm import tqdm 
+                ref_dicts = []
+                for u in tqdm(urls):
+                    ref_dicts.append(process_single(u))
+
+            print('Checking chunk layout...')
+            #Deal with different chunk sizes - create a separate aggregate file for each chunking layout
+            chunking = {}
+            if check_chunking is not None:
+                for r in ref_dicts:
+                    ds=open_single(r,storage_options=storage_options)
+                    key = ds[check_chunking].chunks
+                    if key in chunking.keys():
+                        chunking[key].append(r)
+                    else:
+                        chunking[key] = [r,]
+            else:
+                chunking['auto'] = []
+                for r in ref_dicts:
+                    chunking['auto'].append(r)
+
+            #Label each set with a, b, c, ...
+            labels = [chr(i) for i in range(97,97+len(chunking.keys()))]
+            agg_files=[]
+            for i, (chunks, refs) in enumerate(chunking.items()):
+
+                #setup output location
+                agg_file = f"{root}{year}{month}{suffix}_{labels[i]}.json"
+                out_file = os.path.join(dest,agg_file)
+                print(f'Aggregating into {out_file}')
+
+                output = None
+                if len(refs) == 1: # Only one refence in this set... just use the source reference file
+                    output = json.dumps(refs[0]).encode()
+                else: # otherwise join the references into one file
+
+                    mzz = MultiZarrToZarr(
+                        refs,
+                        remote_protocol="s3",
+                        remote_options=storage_options,
+                        concat_dims=["time"], coo_map={"time": "data:time"},
+                        preprocess=preprocess
+                    )
+
+                    try:
+                        dict_agg = mzz.translate()
+                        output = json.dumps(dict_agg).encode()
+                    except NotImplementedError as ex:
+                        agg_file = f'ERROR(CHUNK): {agg_file} {str(ex)}'
+                    except Exception as ex:
+                        agg_file = f'ERROR(UNKOWN): {agg_file} {str(ex)}'
+                        raise ex
+
+                if not output is None:
+                    with open(out_file,"wb") as outf:
+                        outf.write(output)
+                    agg_files.append(agg_file)
+
+            return {mask: agg_files}
         else:
-            from tqdm import tqdm 
-            ref_dicts = []
-            for u in tqdm(urls):
-                ref_dicts.append(process_single(u))
-        
-        print('Checking chunk layout...')
-        #Deal with different chunk sizes - create a separate aggregate file for each chunking layout
-        chunking = {}
-        if check_chunking is not None:
-            for r in ref_dicts:
-                ds=open_single(r,storage_options=storage_options)
-                key = ds[check_chunking].chunks
-                if key in chunking.keys():
-                    chunking[key].append(r)
-                else:
-                    chunking[key] = [r,]
-        else:
-            chunking['auto'] = []
-            for r in ref_dicts:
-                chunking['auto'].append(r)
-            
-        #Label each set with a, b, c, ...
-        labels = [chr(i) for i in range(97,97+len(chunking.keys()))]
-        agg_files=[]
-        for i, (chunks, refs) in enumerate(chunking.items()):
-            
-            #setup output location
-            agg_file = f"{root}{year}{month}{suffix}_{labels[i]}.json"
-            out_file = os.path.join(dest,agg_file)
-            print(f'Aggregating into {out_file}')
-            
-            output = None
-            if len(refs) == 1: # Only one refence in this set... just use the source reference file
-                output = json.dumps(refs[0]).encode()
-            else: # otherwise join the references into one file
-                
-                mzz = MultiZarrToZarr(
-                    refs,
-                    remote_protocol="s3",
-                    remote_options=storage_options,
-                    concat_dims=["time"], coo_map={"time": "data:time"},
-                    preprocess=preprocess
-                )
-                
-                try:
-                    dict_agg = mzz.translate()
-                    output = json.dumps(dict_agg).encode()
-                except NotImplementedError as ex:
-                    agg_file = f'ERROR(CHUNK): {agg_file} {str(ex)}'
-                except Exception as ex:
-                    agg_file = f'ERROR(UNKOWN): {agg_file} {str(ex)}'
-                    raise ex
-                    
-            if not output is None:
-                with open(out_file,"wb") as outf:
-                    outf.write(output)
-                agg_files.append(agg_file)
-            
-        return {mask: agg_files}
-    else:
-        return {mask: 'ERROR(NOFILES)'}
+            return {mask: 'ERROR(NOFILES)'}
+    return {mask:'existing'}
     
 def zip_references(src, dst, arcname=None):
     import zipfile

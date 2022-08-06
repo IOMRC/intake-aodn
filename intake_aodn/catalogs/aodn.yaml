@@ -173,5 +173,30 @@ sources:
       permalink: https://catalogue-imos.aodn.org.au/geonetwork/srv/eng/catalog.search#/metadata/bf287dfe-9ce4-4969-9c59-51c39ea4d011
       catalog_dir: ''
 
+  NRSROT:
+    driver: netcdf
+    args:
+      urlpath: simplecache::s3://imos-data/IMOS/ANMN/NRS/NRSROT/Biogeochem_profiles/*SBE19plus*.nc
+      concat_dim: PROFILE
+      combine : by_coords
+      xarray_kwargs:
+        drop_variables : history
+        parallel : True
+        engine : netcdf4
+      storage_options:
+        s3:
+          anon: True
 
-
+  VHW5167_Sea-Flyte:
+    driver: netcdf
+    args:
+      urlpath: "simplecache::s3://imos-data/IMOS/SOOP/SOOP-SST/VHW5167_Sea-Flyte/**/*.nc"
+      concat_dim: TIME
+      combine: nested
+      xarray_kwargs:
+        drop_variables : history
+        parallel : True
+        engine : netcdf4
+      storage_options:
+        s3:
+          anon: True
